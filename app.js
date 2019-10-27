@@ -10,6 +10,10 @@ connectDB();
 // fetching body from body Parser 
 app.use(bodyParser.json());
 
+
+// cross origin
+app.use(cors());
+
 // login and signup routes
 app.use('/api/v1/admin' , require('./routes/adminLoginRoutes'));
 app.use('/api/v1/company' , require('./routes/companyLoginRoutes'));
