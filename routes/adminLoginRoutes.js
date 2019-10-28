@@ -28,7 +28,7 @@ const postApiParamsSchema = Joi.object({
 // @route GET
 // @desc fetching jobs
 // @access private
-routes.get("/jobs", auth.adminAuth, async (req, res) => {
+routes.get("/jobs", auth.adminAuth , async (req, res) => {
   const companies = await Company.find({});
 
   try {
@@ -127,7 +127,7 @@ routes.post("/login", async (req, res) => {
     email
   });
   if (error) {
-    return res.status({
+    return res.status(400).send({
       success: false,
       message: error.details[0].message
     });
