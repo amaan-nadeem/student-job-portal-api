@@ -37,6 +37,38 @@ routes.get("/jobs", auth.companyAuth, async (req, res) => {
   }
 });
 
+
+// @route GET
+// @desc specific student info
+// @access private
+routes.get("/profile", auth.companyAuth, async(req, res) => {
+  try {
+    
+    const companyProfile = await Company.findById(
+      { _id: req.company._id },
+      { password: 0 }
+    );
+
+    if (!companyProfile) {
+      return res.status(400).send({
+        success: false,
+        message: "No company found!"
+      });
+    }
+
+    return res.status(200).send({
+      success: false,
+      companyProfile
+    });
+  } catch (error) {
+    res.status(500).send({
+      success: false,
+      message: "Internal server error"
+    });
+  }
+});
+
+
 // @route POST
 // @desc company login
 // @access public
@@ -173,6 +205,7 @@ routes.post("/signup", async (req, res) => {
       buisnessPhoneNumber
     });
 
+    
     // error checking before registering any company
     if (error) {
       return res.status(400).send({
@@ -220,6 +253,7 @@ routes.post("/signup", async (req, res) => {
         message: "Space is not allowed in Password"
       });
     }
+
     const spaceInEmailCheck = email.split(" ");
     if (spaceInEmailCheck.length > 1) {
       return res.status(400).send({

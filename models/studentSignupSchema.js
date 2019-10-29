@@ -25,6 +25,10 @@ const studentsSchema = new Schema({
     majors: {
         type: [String],
         required: true
+    },
+    gender: {
+        type: String,
+        required: true
     }
 },
 {

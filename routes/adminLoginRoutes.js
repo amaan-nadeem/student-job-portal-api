@@ -97,6 +97,37 @@ routes.get("/students", auth.adminAuth, async (req, res) => {
 });
 
 
+// @route GET
+// @desc specific student info
+// @access private
+routes.get("/profile", auth.adminAuth, async(req, res) => {
+  try {
+    
+    const adminProfile = await Admin.findById(
+      { _id: req.admin._id },
+      { password: 0 }
+    );
+
+    if (!adminProfile) {
+      return res.status(400).send({
+        success: false,
+        message: "You are Not an admin"
+      });
+    }
+
+    return res.status(200).send({
+      success: false,
+      adminProfile
+    });
+  } catch (error) {
+    res.status(500).send({
+      success: false,
+      message: "Internal server error"
+    });
+  }
+});
+
+
 // @route POST
 // @desc admin login
 // @access public

@@ -5,14 +5,13 @@ const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const config = require("config");
 const Student = require("../models/studentSignupSchema");
-const Company = require('../models/companySignupSchema');
-const Jobs = require('../models/createJobsSchema');
-const auth = require('../middleware/auth');
-const ApplyJobs = require('../models/jobApplyingSchema');
+const Company = require("../models/companySignupSchema");
+const Jobs = require("../models/createJobsSchema");
+const auth = require("../middleware/auth");
+const ApplyJobs = require("../models/jobApplyingSchema");
 
 // JWT_SECRET
 const JWT_SECRET = process.env.JWT_SECRET || config.get("JWT_SECRET");
-
 
 // Authentication of Students input fields
 const apiParamsSchema = Joi.object({
@@ -22,57 +21,85 @@ const apiParamsSchema = Joi.object({
     .min(8)
     .required(),
   collegeName: Joi.string().required(),
-  majors: Joi.array().required()
+  majors: Joi.array().required(),
+  gender: Joi.string().required()
 });
-
-
 
 // @route GET
 // @desc getting jobs
 // @access private
 routes.get("/jobs", auth.studentAuth, async (req, res) => {
-    const companies = await Company.find({});
-    const appliedJobs = await ApplyJobs.find({createdBy: req.student._id});
-    
-    try {
-      // getting jobs
-      let totalJobs = [];
-      // filtering each company created jobs
-      for (let i = 0; i < companies.length; i++) {
-        let count = 0;
-        let _id = companies[i]._id;
-        let eachCompanyJobs = await Jobs.find({ createdBy: _id }).populate(
-          "createdBy",
-          { password: 0 }
-        );
-        // filtering companies who haven't applied for job yet
-        let keys = Object.keys(eachCompanyJobs);
-        if (keys.length !== 0) {
-          let jobsArray = {
-            companyName: eachCompanyJobs[count].createdBy.companyName,
-            totalJobs: eachCompanyJobs
-          };
-          totalJobs.push(jobsArray);
-          count++;
-        }
+  const companies = await Company.find({});
+  const appliedJobs = await ApplyJobs.find({ createdBy: req.student._id });
+
+  try {
+    // getting jobs
+    let totalJobs = [];
+    // filtering each company created jobs
+    for (let i = 0; i < companies.length; i++) {
+      let count = 0;
+      let _id = companies[i]._id;
+      let eachCompanyJobs = await Jobs.find({ createdBy: _id }).populate(
+        "createdBy",
+        { password: 0 }
+      );
+      // filtering companies who haven't applied for job yet
+      let keys = Object.keys(eachCompanyJobs);
+      if (keys.length !== 0) {
+        let jobsArray = {
+          companyName: eachCompanyJobs[count].createdBy.companyName,
+          totalJobs: eachCompanyJobs
+        };
+        totalJobs.push(jobsArray);
+        count++;
       }
-  
-      // sending response
-      return res.status(200).send({
-        success: true,
-        message: "total jobs",
-        totalJobs,
-        appliedJobs
-      });
-    } catch (error) {
-      return res.status(500).send({
+    }
+
+    // sending response
+    return res.status(200).send({
+      success: true,
+      message: "total jobs",
+      totalJobs,
+      appliedJobs
+    });
+  } catch (error) {
+    return res.status(500).send({
+      success: false,
+      message: "Internal server error"
+    });
+  }
+});
+
+// @route GET
+// @desc specific student info
+// @access private
+routes.get("/profile", auth.studentAuth, async(req, res) => {
+  try {
+    
+    const studentProfile = await Student.findById(
+      { _id: req.student._id },
+      { password: 0 }
+    );
+
+    if (!studentProfile) {
+      return res.status(400).send({
         success: false,
-        message: "Internal server error"
+        message: "No student found!"
       });
     }
-  });
 
-  
+    return res.status(200).send({
+      success: false,
+      studentProfile
+    });
+  } catch (error) {
+    res.status(500).send({
+      success: false,
+      message: "Internal server error"
+    });
+  }
+});
+
 // @route POST
 // @desc student signup
 // @access Public
@@ -83,7 +110,8 @@ routes.post("/signup", async (req, res) => {
     password,
     collegeName,
     majors,
-    email
+    email,
+    gender
   } = req.body;
 
   if (!email) {
@@ -105,7 +133,6 @@ routes.post("/signup", async (req, res) => {
   }
 
   try {
-
     // checking whether the email is already existed in the database or not
     const isStudentExist = await Student.findOne({ email });
     if (isStudentExist) {
@@ -115,37 +142,34 @@ routes.post("/signup", async (req, res) => {
       });
     }
 
-    if(!studentName){
+    if (!studentName) {
       return res.status(400).send({
         success: false,
-        message: '\"studentName\" is not allowed to be empty'
-      })
-    }
-
-    else if(!fatherName){
+        message: '"studentName" is not allowed to be empty'
+      });
+    } else if (!fatherName) {
       return res.status(400).send({
         success: false,
-        message: '\"fatherName\" is not allowed to be empty'
-      })
-    }
-
-    else if(!collegeName){
+        message: '"fatherName" is not allowed to be empty'
+      });
+    } else if (!collegeName) {
       return res.status(400).send({
         success: false,
-        message: '\"collegeName\" is not allowed to be empty'
-      })
+        message: '"collegeName" is not allowed to be empty'
+      });
     }
     // whitespace checking
     studentName = studentName.trim();
     fatherName = fatherName.trim();
     collegeName = collegeName.trim();
-    
+
     const { error } = apiParamsSchema.validate({
       studentName,
       fatherName,
       password,
       collegeName,
-      majors
+      majors,
+      gender
     });
     // error checking before registering any student
     if (error) {
@@ -164,31 +188,30 @@ routes.post("/signup", async (req, res) => {
 
     password = password.trim();
     // checking if the space is present in given email or password or not
-    const spaceInPasswordCheck = password.split(' ');
-    if(spaceInPasswordCheck.length > 1){
-        return res.status(400).send({
-            success: false,
-            message: "Space is not allowed in Password"
-        })
+    const spaceInPasswordCheck = password.split(" ");
+    if (spaceInPasswordCheck.length > 1) {
+      return res.status(400).send({
+        success: false,
+        message: "Space is not allowed in Password"
+      });
     }
 
-    
-    const spaceInEmailCheck = email.split(' ');
-    if(spaceInEmailCheck.length > 1){
-        return res.status(400).send({
-            success: false,
-            message: "Space is not allowed in Email"
-        })
+    const spaceInEmailCheck = email.split(" ");
+    if (spaceInEmailCheck.length > 1) {
+      return res.status(400).send({
+        success: false,
+        message: "Space is not allowed in Email"
+      });
     }
-    
-    
+
     const student = await new Student({
       studentName,
       fatherName,
       password,
       email,
       majors,
-      collegeName
+      collegeName,
+      gender
     });
 
     // hashing the password of student
@@ -202,11 +225,11 @@ routes.post("/signup", async (req, res) => {
 
     // creating jsonwebtoken
     const payload = {
-        student: {
-      email,
-      _id: student.id
-    }
-        };
+      student: {
+        email,
+        _id: student.id
+      }
+    };
 
     const token = await jwt.sign(payload, JWT_SECRET, {
       expiresIn: "365d"
@@ -230,32 +253,34 @@ routes.post("/signup", async (req, res) => {
 // @desc student login
 // @access Public
 const postApiParamsSchema = Joi.object({
-    password: Joi.string().min(8).required(),
-    email: Joi.string().required()
-})
+  password: Joi.string()
+    .min(8)
+    .required(),
+  email: Joi.string().required()
+});
 
 routes.post("/login", async (req, res) => {
   let { email, password } = req.body;
-  if(!email){
-      return res.status(400).send({
-          success: false,
-          message: "Please enter the email address"
-      })
+  if (!email) {
+    return res.status(400).send({
+      success: false,
+      message: "Please enter the email address"
+    });
   }
   email = email.toLowerCase();
   // validating api params
   const { error } = postApiParamsSchema.validate({
-      password,
-      email
+    password,
+    email
+  });
+  if (error) {
+    return res.status(400).send({
+      success: false,
+      message: error.details[0].message
     });
-    if (error) {
-        return res.status(400).send({
-            success: false,
-            message: error.details[0].message
-        });
-    }
-    
-    try {
+  }
+
+  try {
     const student = await Student.findOne({ email });
     if (!student) {
       return res.status(400).send({
