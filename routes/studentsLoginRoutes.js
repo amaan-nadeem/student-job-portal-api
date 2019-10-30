@@ -70,6 +70,34 @@ routes.get("/jobs", auth.studentAuth, async (req, res) => {
   }
 });
 
+
+
+// @route GET 
+// @desc fetching companies
+// @access private
+routes.get('/companies', auth.studentAuth, async (req, res) => {
+  try {
+    const companies = await Company.find({});
+        if(!companies){
+          res.status(400).send({
+            success: false,
+            message: "No Company Found"
+          })
+        }
+    return res.status(200).send({
+      success: true,
+      companies
+    })
+  } catch (error) {
+      res.status(500).send({
+        success: false,
+        message: 'Internal Server Error'
+      })    
+  }    
+      
+})
+
+
 // @route GET
 // @desc specific student info
 // @access private
