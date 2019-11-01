@@ -46,7 +46,8 @@ routes.get('/job-applications', auth.companyAuth ,async (req, res) => {
   try {
 
     const id = req.company._id;
-    const jobApplications = await ApplyJobs.find({createdFor: id}).populate('createdBy');
+    const jobApplications = await ApplyJobs.find({createdFor: id}).populate('createdBy').populate('jobId');
+    console.log(jobApplications);
 
     if(!jobApplications){
       res.status(400).send({

@@ -23,7 +23,8 @@ const jobApplySchema = new Schema({
     },
     jobId: {
         type: String,
-        required: true
+        required: true,
+        ref: 'jobs'
     },
     createdFor: {
         type: mongoose.Schema.Types.ObjectId,
