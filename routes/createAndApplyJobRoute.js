@@ -131,6 +131,7 @@ routes.post("/apply-for-job/:id", auth.studentAuth, async (req, res) => {
     }
     // job id
     const _id = await Job.findOne({ _id: req.params.id });
+ 
     if (!_id) {
       return res.status(400).send({
         success: false,

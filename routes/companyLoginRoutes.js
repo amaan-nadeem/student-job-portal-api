@@ -38,6 +38,36 @@ routes.get("/jobs", auth.companyAuth, async (req, res) => {
 });
 
 
+// @route GET 
+// @desc Job Applications
+// @access private
+
+routes.get('/job-applications', auth.companyAuth ,async (req, res) => {
+  try {
+
+    const id = req.company._id;
+    const jobApplications = await ApplyJobs.find({createdFor: id}).populate('createdBy');
+
+    if(!jobApplications){
+      res.status(400).send({
+        success:false,
+        message: 'No Job Applications Found'
+      })
+    }
+
+    res.status(200).send({
+      success: true,
+      jobApplications
+    })
+  } catch (error) {
+    res.status(400).send({
+      success: false,
+      message: "Internal Server Error"
+    })
+  }
+})
+
+
 // @route GET
 // @desc specific student info
 // @access private

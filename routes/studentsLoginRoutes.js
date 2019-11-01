@@ -93,8 +93,7 @@ routes.get('/companies', auth.studentAuth, async (req, res) => {
         success: false,
         message: 'Internal Server Error'
       })    
-  }    
-      
+  }      
 })
 
 

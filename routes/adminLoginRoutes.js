@@ -284,7 +284,6 @@ routes.delete("/delete-company/:id", auth.adminAuth, async (req, res) => {
     });
   }
 
-  // task id
   try {
     const _id = req.params.id;
 
@@ -303,7 +302,7 @@ routes.delete("/delete-company/:id", auth.adminAuth, async (req, res) => {
         });
       }
     }
-    // finding task and delete
+    // finding company and delete
     const companyToDelete = await Company.findByIdAndDelete({ _id });
 
     if (!companyToDelete) {
@@ -327,6 +326,7 @@ routes.delete("/delete-company/:id", auth.adminAuth, async (req, res) => {
   }
 });
 
+
 // @route delete
 // @desc delete student
 // @access private
@@ -339,12 +339,12 @@ routes.delete("/delete-student/:id", auth.adminAuth, async (req, res) => {
     });
   }
 
-  // task id
+  
   try {
     const appliedJobs = ApplyJobs.find({createdBy: req.params.id});
     
     const _id = req.params.id;
-    // finding task and delete
+    // finding student and delete
     const studentToDelete = await Student.findByIdAndDelete({ _id });
 
     if (!studentToDelete) {
