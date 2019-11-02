@@ -71,6 +71,30 @@ routes.get("/jobs", auth.studentAuth, async (req, res) => {
 });
 
 
+routes.get('/applied-jobs', auth.studentAuth ,async (req, res) => {
+  try {
+
+    const id = req.student._id;
+    const appliedJobs = await ApplyJobs.find({createdBy: id}).populate('jobId').populate('createdFor');
+
+    if(!appliedJobs){
+      res.status(400).send({
+        success:false,
+        message: 'No applied Jobs are found!'
+      })
+    }
+
+    res.status(200).send({
+      success: true,
+      appliedJobs
+    })
+  } catch (error) {
+    res.status(400).send({
+      success: false,
+      message: "Internal Server Error"
+    })
+  }
+})
 
 // @route GET 
 // @desc fetching companies
