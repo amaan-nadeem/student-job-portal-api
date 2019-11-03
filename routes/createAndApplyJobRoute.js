@@ -94,19 +94,18 @@ routes.post("/apply-for-job/:id", auth.studentAuth, async (req, res) => {
   }
 
   try {
+    // checking if the student already applied for job or not
+    const studentJobs = await JobApply.find({ createdBy: req.student._id });
+    const jobIds = studentJobs.filter(_id => {
+      return req.params.id === _id.jobId;
+    });
 
-     // checking if the student already applied for job or not
-     const studentJobs = await JobApply.find({createdBy: req.student._id});
-     const jobIds = studentJobs.filter((_id) => {
-       return req.params.id === _id.jobId 
-        })
-
-      if(jobIds.length !== 0){
-        return res.status(400).send({
-          success: false,
-          message: 'You Already have applied to this Job'
-        })
-      }
+    if (jobIds.length !== 0) {
+      return res.status(400).send({
+        success: false,
+        message: "You Already have applied to this Job"
+      });
+    }
 
     // API params error handling
     if (!totalExperience || !experienceInSpecifiedField) {
@@ -131,7 +130,7 @@ routes.post("/apply-for-job/:id", auth.studentAuth, async (req, res) => {
     }
     // job id
     const _id = await Job.findOne({ _id: req.params.id });
- 
+
     if (!_id) {
       return res.status(400).send({
         success: false,
@@ -143,7 +142,6 @@ routes.post("/apply-for-job/:id", auth.studentAuth, async (req, res) => {
       .populate("createdBy", { password: 0 })
       .execPopulate();
 
-
     const jobApply = await new JobApply({
       totalExperience,
       areaOfInterest,
@@ -154,21 +152,81 @@ routes.post("/apply-for-job/:id", auth.studentAuth, async (req, res) => {
       createdFor: company.createdBy._id,
       createdBy: req.student._id
     });
-    
-    jobApply.save();
-    const jobDetail = await jobApply.populate("createdBy" , {password: 0}).execPopulate();
- 
-  return res.status(200).send({
-      success: true,
-      message: 'Job Application Successful',
-      jobDetail
-    })
 
+    jobApply.save();
+    const jobDetail = await jobApply
+      .populate("createdBy", { password: 0 })
+      .execPopulate();
+
+    return res.status(200).send({
+      success: true,
+      message: "Job Application Successful",
+      jobDetail
+    });
   } catch (error) {
     return res.status(500).send({
       success: false,
       message: "Internal server error"
-    })
+    });
+  }
+});
+
+// @route PUT
+// @desc Edit Job
+// @access private
+
+const putApiParamsSchema = Joi.object({
+  requiredPosition: Joi.string(),
+  requiredExperience: Joi.string()
+});
+
+routes.put("/edit-job/:id", auth.companyAuth, async (req, res) => {
+  const isObjectId = mongoose.Types.ObjectId.isValid(req.params.id);
+
+  // checking comming object-id
+  if (!isObjectId) {
+    return res.status(400).send({
+      success: false,
+      message: "Invalid Object id"
+    });
+  }
+
+  const { requiredPosition, requiredExperience } = req.body;
+  const { error } = putApiParamsSchema.validate({
+    requiredPosition,
+    requiredExperience
+  });
+
+  if (error) {
+    return res.status(400).send({
+      success: false,
+      message: error.details[0].message
+    });
+  }
+
+  // Job id
+  const _id = req.params.id;
+  try {
+    const jobUpdate = await Job.findByIdAndUpdate({ _id }, req.body, {
+      new: true
+    });
+
+    if (!jobUpdate) {
+      return res.status(400).send({
+        success: false,
+        message: "no job found!"
+      });
+    }
+
+    return res.status(200).send({
+      success: true,
+      jobUpdate
+    });
+  } catch (error) {
+    return res.status(500).send({
+      success: false,
+      message: "Internal Server Error"
+    });
   }
 });
 
